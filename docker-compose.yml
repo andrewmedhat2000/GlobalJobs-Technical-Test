@@ -1,0 +1,67 @@
+services:
+  app:
+    build:
+      context: ./Global-Jobs
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - docker-network
+    ports:
+      - 9000:9000
+    depends_on:
+      - db
+
+  queue-worker:
+    build:
+      context: ./Global-Jobs
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - docker-network
+    depends_on:
+      - db
+    command: php artisan queue:work
+  
+  caddy:
+    image: caddy:latest
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Global-Jobs:/var/www/html
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - docker-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    platform: linux/amd64
+    ports:
+      - 3306:3306
+    restart: always
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    networks:
+      - docker-network
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - docker-network
+
+volumes:
+  db-data:
+
+networks:
+  docker-network:
+    driver: bridge
