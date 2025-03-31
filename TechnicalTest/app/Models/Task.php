@@ -43,4 +43,8 @@ class Task extends Model
 
         return $query;
     }
+ public function canComplete()
+    {
+        return $this->dependencies()->where('status', '!=', 'completed')->doesntExist();
+    }
 }
